@@ -1,6 +1,6 @@
 <div class="row no-wrap">
-  <!-- Sidebar - make sure it's visible -->
-  <div class="col-3" style="min-width: 250px; border-right: 1px solid #ddd;">
+  <!-- Sidebar - only visible for admins -->
+  <div v-if="isSuper" class="col-3" style="min-width: 250px; border-right: 1px solid #ddd;">
     <!-- Search and Add buttons -->
     <div class="row q-pa-sm">
       <div class="col">
@@ -59,8 +59,8 @@
     </q-list>
   </div>
 
-  <!-- Main chat area -->
-  <div class="col">
+  <!-- Main chat area - full width when not admin -->
+  <div :class="isSuper ? 'col' : 'col-12'">
     <q-card>
       <q-card-section>
         <div class="row">
@@ -152,7 +152,7 @@
   <!-- Existing dialogs -->
   <q-dialog v-model="showAddPublicKey" position="top">
     <q-card class="q-pa-lg q-pt-xl" style="width: 500px">
-      <q-form @submit="addPublicKey" class="q-gutter-md">
+      <q-form @submit="addPublicKey()" class="q-gutter-md">
         <q-input
           filled
           dense

@@ -1,6 +1,6 @@
 window.app.component('direct-messages', {
   name: 'direct-messages',
-  props: ['active-chat-peer', 'nostracct-id', 'adminkey', 'inkey'],
+  props: ['active-chat-peer', 'nostracct-id', 'adminkey', 'inkey', 'is-super'],
   template: '#direct-messages',
   delimiters: ['${', '}'],
   watch: {
@@ -119,14 +119,14 @@ window.app.component('direct-messages', {
         LNbits.utils.notifyApiError(error)
       }
     },
-    addPublicKey: async function () {
+    addPublicKey: async function (pubkey = null) {
       try {
         const {data} = await LNbits.api.request(
           'POST',
           '/nostrchat/api/v1/peer',
           this.adminkey,
           {
-            public_key: this.newPublicKey,
+            public_key: String(pubkey || this.newPublicKey),
             nostracct_id: this.nostracctId,
             unread_messages: 0
           }
@@ -176,5 +176,8 @@ window.app.component('direct-messages', {
   created: async function () {
     await this.getPeers()
     this.getPeersDebounced = _.debounce(this.getPeers, 2000, false)
+    if (!this.isSuper && this.peers.length == 0) {
+      // TODO: automatically connect to super pubkey from db
+    }
   }
 })
