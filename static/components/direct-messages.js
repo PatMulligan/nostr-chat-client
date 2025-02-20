@@ -32,6 +32,15 @@ window.app.component('direct-messages', {
           }
         }
       })
+    },
+    filteredPeers() {
+      if (!this.search) return this.peers
+      const searchLower = this.search.toLowerCase()
+      return this.peers.filter(peer => {
+        const name = (peer.profile.name || '').toLowerCase()
+        const pubkey = peer.public_key.toLowerCase()
+        return name.includes(searchLower) || pubkey.includes(searchLower)
+      })
     }
   },
   data: function () {
@@ -44,7 +53,8 @@ window.app.component('direct-messages', {
       showAddPublicKey: false,
       newPublicKey: null,
       showRawMessage: false,
-      rawMessage: null
+      rawMessage: null,
+      search: '',
     }
   },
   methods: {
