@@ -179,5 +179,6 @@ window.app.component('direct-messages', {
     if (!this.isSuper && this.peers.length == 0) {
       // TODO: automatically connect to super pubkey from db
     }
+    this.activePublicKey = this.peers[0]?.public_key || ''
   }
 })
