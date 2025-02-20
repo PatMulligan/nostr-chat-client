@@ -59,9 +59,9 @@ window.app = Vue.createApp({
       const message = nostracct.config.active
         ? 'New orders will not be processed. Are you sure you want to deactivate?'
         : nostracct.config.restore_in_progress
-          ? 'NostrAcct restore  from nostr in progress. Please wait!! ' +
+          ? 'Nostr account restore  from nostr in progress. Please wait!! ' +
           'Activating now can lead to duplicate order processing. Click "OK" if you want to activate anyway?'
-          : 'Are you sure you want activate this nostracct?'
+          : 'Are you sure you want activate this nostr account?'
 
       LNbits.utils.confirmDialog(message).onOk(async () => {
         await this.toggleNostrAcct()
