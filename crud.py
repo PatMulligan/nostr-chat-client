@@ -191,6 +191,7 @@ async def get_direct_messages(nostracct_id: str, public_key: str) -> List[Direct
     return [DirectMessage.from_row(row) for row in rows]
 
 
+# TODO: remove
 async def get_orders_from_direct_messages(nostracct_id: str) -> List[DirectMessage]:
     rows: list[dict] = await db.fetchall(
         """
@@ -231,7 +232,7 @@ async def delete_nostracct_direct_messages(nostracct_id: str) -> None:
     )
 
 
-######################################## CUSTOMERS #####################################
+######################################## PEERS #####################################
 
 
 async def create_peer(nostracct_id: str, data: Peer) -> Peer:
