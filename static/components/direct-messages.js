@@ -1,6 +1,6 @@
 window.app.component('direct-messages', {
   name: 'direct-messages',
-  props: ['active-chat-peer', 'nostracct-id', 'adminkey', 'inkey'],
+  props: ['active-chat-peer', 'nostracct-id', 'adminkey', 'inkey', 'is-super'],
   template: '#direct-messages',
   delimiters: ['${', '}'],
   watch: {
@@ -32,6 +32,15 @@ window.app.component('direct-messages', {
           }
         }
       })
+    },
+    filteredPeers() {
+      if (!this.search) return this.peers
+      const searchLower = this.search.toLowerCase()
+      return this.peers.filter(peer => {
+        const name = (peer.profile.name || '').toLowerCase()
+        const pubkey = peer.public_key.toLowerCase()
+        return name.includes(searchLower) || pubkey.includes(searchLower)
+      })
     }
   },
   data: function () {
@@ -44,7 +53,8 @@ window.app.component('direct-messages', {
       showAddPublicKey: false,
       newPublicKey: null,
       showRawMessage: false,
-      rawMessage: null
+      rawMessage: null,
+      search: '',
     }
   },
   methods: {
@@ -109,14 +119,14 @@ window.app.component('direct-messages', {
         LNbits.utils.notifyApiError(error)
       }
     },
-    addPublicKey: async function () {
+    addPublicKey: async function (pubkey = null) {
       try {
         const {data} = await LNbits.api.request(
           'POST',
           '/nostrchat/api/v1/peer',
           this.adminkey,
           {
-            public_key: this.newPublicKey,
+            public_key: String(pubkey || this.newPublicKey),
             nostracct_id: this.nostracctId,
             unread_messages: 0
           }
@@ -166,5 +176,9 @@ window.app.component('direct-messages', {
   created: async function () {
     await this.getPeers()
     this.getPeersDebounced = _.debounce(this.getPeers, 2000, false)
+    if (!this.isSuper && this.peers.length == 0) {
+      // TODO: automatically connect to super pubkey from db
+    }
+    this.activePublicKey = this.peers[0]?.public_key || ''
   }
 })
