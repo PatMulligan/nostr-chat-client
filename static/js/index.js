@@ -20,9 +20,9 @@ window.app = Vue.createApp({
     }
   },
   methods: {
-    generateKeys: async function () {
+    generateKeys: async function (isSuper) {
       const privateKey = nostr.generatePrivateKey()
-      await this.createNostrAcct(privateKey)
+      await this.createNostrAcct(privateKey, isSuper)
     },
     importKeys: async function () {
       this.importKeyDialog.show = false
@@ -95,13 +95,16 @@ window.app = Vue.createApp({
       this.activeChatPeer = ''
       this.showKeys = false
     },
-    createNostrAcct: async function (privateKey) {
+    createNostrAcct: async function (privateKey, isSuper) {
       try {
         const pubkey = nostr.getPublicKey(privateKey)
         const payload = {
           private_key: privateKey,
           public_key: pubkey,
           config: {}
+        }
+        if (isSuper) {
+          payload.is_super = true;
         }
         const { data } = await LNbits.api.request(
           'POST',
@@ -147,40 +150,40 @@ window.app = Vue.createApp({
         const scheme = location.protocol === 'http:' ? 'ws' : 'wss'
         const port = location.port ? `:${location.port}` : ''
         const wsUrl = `${scheme}://${document.domain}${port}/api/v1/ws/${this.nostracct.id}`
-        
+
         // Close existing connection if any
         if (this.wsConnection) {
           this.wsConnection.close()
           this.wsConnection = null
         }
-        
+
         console.log('Reconnecting to websocket: ', wsUrl)
         this.wsConnection = new WebSocket(wsUrl)
-        
+
         this.wsConnection.onopen = () => {
           console.log('WebSocket connected successfully')
           this.reconnectAttempts = 0
           this.isConnecting = false
         }
-        
+
         this.wsConnection.onmessage = async e => {
           const data = JSON.parse(e.data)
           if (data.type === 'dm:-1') {
             await this.$refs.directMessagesRef.handleNewMessage(data)
           }
         }
-        
+
         this.wsConnection.onerror = error => {
           console.error('WebSocket error:', error)
         }
-        
+
         this.wsConnection.onclose = () => {
           console.log('WebSocket closed')
           this.wsConnection = null
           this.isConnecting = false
           this.reconnectAttempts++
         }
-        
+
       } catch (error) {
         this.reconnectAttempts++
         this.isConnecting = false

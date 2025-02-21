@@ -14,6 +14,7 @@ from lnbits.decorators import (
 # TODO: remove pretty sure not needed
 # from lnbits.utils.exchange_rates import currencies
 from loguru import logger
+from lnbits.core.models import User
 
 from . import nostr_client, nostrchat_ext
 from .crud import (
@@ -31,6 +32,8 @@ from .crud import (
     touch_nostracct,
     update_peer_no_unread_messages,
     update_nostracct,
+    save_admin_pubkey,
+    get_admin_pubkey
 )
 from .helpers import normalize_public_key
 from .models import (
@@ -63,6 +66,12 @@ async def api_create_nostracct(
         assert nostracct is None, "A nostracct already exists for this user"
 
         nostracct = await create_nostracct(wallet.wallet.user, data)
+
+        print("###############", data)
+        # Check if this is a super user from the frontend data
+        if data.is_super:
+            print("############ Storing admin pubkey")
+            await save_admin_pubkey(wallet.wallet.user, nostracct.public_key)
 
         await resubscribe_to_all_nostraccts()
 
@@ -399,3 +408,16 @@ async def nostrclient_ws(websocket: WebSocket, token: str):
     except Exception as ex:
         logger.warning(ex)
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+
+
+@nostrchat_ext.get(
+    "/api/v1/admin-pubkey",
+    description="Get the admin's public key for direct messaging",
+    dependencies=[Depends(require_invoice_key)],
+)
+async def get_admin_pubkey_route(user: User = Depends(require_invoice_key)):
+    """API endpoint to get the admin's public key"""
+    pubkey = await get_admin_pubkey()
+    if not pubkey:
+        raise HTTPException(status_code=404, detail='Admin public key not configured')
+    return {"pubkey": pubkey}

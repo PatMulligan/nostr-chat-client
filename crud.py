@@ -329,3 +329,39 @@ async def update_peer_no_unread_messages(nostracct_id: str, public_key: str):
             "public_key": public_key,
         },
     )
+
+
+######################################## HANDLE ADMIN PUBKEY #####################################
+
+async def save_admin_pubkey(nostracct_id: str, pubkey: str) -> None:
+    """Store the admin's public key in the database"""
+    await db.execute(
+        """
+        DELETE FROM nostrchat.admin_config;
+        """
+    )
+    await db.execute(
+        """
+        INSERT INTO nostrchat.admin_config (nostracct_id, admin_pubkey)
+        VALUES (:nostracct_id, :pubkey);
+        """,
+        {"nostracct_id": nostracct_id, "pubkey": pubkey},
+    )
+
+async def get_admin_pubkey() -> str | None:
+    """Retrieve the admin's public key from the database"""
+    row: dict = await db.fetchone(
+        """
+        SELECT admin_pubkey FROM nostrchat.admin_config
+        ORDER BY created_at DESC LIMIT 1
+        """,
+        {},
+    )
+    return row["admin_pubkey"] if row else None
+
+# TODO: remove, as i don't think this is used anywhere
+async def initialize_admin_account(db, pubkey: str):
+    """Initialize admin account with the given public key"""
+    await save_admin_pubkey(db, pubkey)
+    # ... any other admin initialization logic ...
+
