@@ -15,7 +15,8 @@ window.app = Vue.createApp({
           privateKey: null
         }
       },
-      wsConnection: null
+      wsConnection: null,
+      isConnecting: false
     }
   },
   methods: {
@@ -140,8 +141,9 @@ window.app = Vue.createApp({
     //   this.orderPubkey = peerPubkey
     // },
     waitForNotifications: async function () {
-      if (!this.nostracct) return
+      if (!this.nostracct || this.isConnecting) return
       try {
+        this.isConnecting = true
         const scheme = location.protocol === 'http:' ? 'ws' : 'wss'
         const port = location.port ? `:${location.port}` : ''
         const wsUrl = `${scheme}://${document.domain}${port}/api/v1/ws/${this.nostracct.id}`
@@ -157,7 +159,8 @@ window.app = Vue.createApp({
         
         this.wsConnection.onopen = () => {
           console.log('WebSocket connected successfully')
-          this.reconnectAttempts = 0  // Reset on successful connection
+          this.reconnectAttempts = 0
+          this.isConnecting = false
         }
         
         this.wsConnection.onmessage = async e => {
@@ -174,11 +177,13 @@ window.app = Vue.createApp({
         this.wsConnection.onclose = () => {
           console.log('WebSocket closed')
           this.wsConnection = null
+          this.isConnecting = false
           this.reconnectAttempts++
         }
         
       } catch (error) {
         this.reconnectAttempts++
+        this.isConnecting = false
         this.$q.notify({
           timeout: 5000,
           type: 'warning',
@@ -207,7 +212,7 @@ window.app = Vue.createApp({
   },
   created: async function () {
     await this.getNostrAcct()
-    setInterval(async () => {
+    const checkConnection = async () => {
       if (
         !this.wsConnection ||
         this.wsConnection.readyState !== WebSocket.OPEN
@@ -216,6 +221,8 @@ window.app = Vue.createApp({
         await new Promise(resolve => setTimeout(resolve, backoff))
         await this.waitForNotifications()
       }
-    }, 1000)
+      setTimeout(checkConnection, 5000)
+    }
+    checkConnection()
   }
 })
