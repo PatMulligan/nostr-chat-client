@@ -8,6 +8,7 @@ window.app = Vue.createApp({
       nostracct: {},
       activeChatPeer: '',
       showKeys: false,
+      reconnectAttempts: 0,
       importKeyDialog: {
         show: false,
         data: {
@@ -156,6 +157,7 @@ window.app = Vue.createApp({
         
         this.wsConnection.onopen = () => {
           console.log('WebSocket connected successfully')
+          this.reconnectAttempts = 0  // Reset on successful connection
         }
         
         this.wsConnection.onmessage = async e => {
@@ -172,9 +174,11 @@ window.app = Vue.createApp({
         this.wsConnection.onclose = () => {
           console.log('WebSocket closed')
           this.wsConnection = null
+          this.reconnectAttempts++
         }
         
       } catch (error) {
+        this.reconnectAttempts++
         this.$q.notify({
           timeout: 5000,
           type: 'warning',
@@ -208,6 +212,8 @@ window.app = Vue.createApp({
         !this.wsConnection ||
         this.wsConnection.readyState !== WebSocket.OPEN
       ) {
+        const backoff = Math.min(Math.pow(2, this.reconnectAttempts) * 1000, 30000)
+        await new Promise(resolve => setTimeout(resolve, backoff))
         await this.waitForNotifications()
       }
     }, 1000)

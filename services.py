@@ -63,6 +63,7 @@ async def send_dm(
     event_id: Optional[str] = None,
     event_created_at: Optional[int] = None,
 ):
+    logger.debug(f"Sending DM to {other_pubkey}")
     # If event_id and created_at not provided, create new event
     if not event_id or not event_created_at:
         dm_event = nostracct.build_dm_event(dm_content, other_pubkey)
@@ -88,8 +89,10 @@ async def send_dm(
         type=type_,
     )
     dm_reply = await create_direct_message(nostracct.id, dm)
+    logger.debug(f"Created DM in database with id {dm_reply.id}")
 
     await nostr_client.publish_nostr_event(dm_event)
+    logger.debug("Published event to nostr relay")
 
     await websocket_updater(
         nostracct.id,

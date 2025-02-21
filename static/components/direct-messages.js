@@ -187,5 +187,11 @@ window.app.component('direct-messages', {
     }
     console.log(this.peers)
     this.activePublicKey = this.peers[0]?.public_key || ''
+  },
+  beforeDestroy() {
+    // Clean up any timers or subscriptions
+    if (this.getPeersDebounced) {
+      this.getPeersDebounced.cancel();
+    }
   }
 })
