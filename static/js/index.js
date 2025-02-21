@@ -144,14 +144,36 @@ window.app = Vue.createApp({
         const scheme = location.protocol === 'http:' ? 'ws' : 'wss'
         const port = location.port ? `:${location.port}` : ''
         const wsUrl = `${scheme}://${document.domain}${port}/api/v1/ws/${this.nostracct.id}`
+        
+        // Close existing connection if any
+        if (this.wsConnection) {
+          this.wsConnection.close()
+          this.wsConnection = null
+        }
+        
         console.log('Reconnecting to websocket: ', wsUrl)
         this.wsConnection = new WebSocket(wsUrl)
+        
+        this.wsConnection.onopen = () => {
+          console.log('WebSocket connected successfully')
+        }
+        
         this.wsConnection.onmessage = async e => {
           const data = JSON.parse(e.data)
           if (data.type === 'dm:-1') {
             await this.$refs.directMessagesRef.handleNewMessage(data)
           }
         }
+        
+        this.wsConnection.onerror = error => {
+          console.error('WebSocket error:', error)
+        }
+        
+        this.wsConnection.onclose = () => {
+          console.log('WebSocket closed')
+          this.wsConnection = null
+        }
+        
       } catch (error) {
         this.$q.notify({
           timeout: 5000,
