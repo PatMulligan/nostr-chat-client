@@ -3,6 +3,7 @@ import json
 from asyncio import Queue
 from threading import Thread
 from typing import List, Optional
+import time
 
 from loguru import logger
 from websocket import WebSocketApp
@@ -30,21 +31,35 @@ class NostrClient:
     async def connect_to_nostrclient_ws(self) -> WebSocketApp:
         logger.debug(f"Connecting to websockets for 'nostrclient' extension...")
 
-        relay_endpoint = encrypt_internal_message("relay")
-        on_open, on_message, on_error, on_close = self._ws_handlers()
-        ws = WebSocketApp(
-            f"ws://localhost:{settings.port}/nostrclient/api/v1/{relay_endpoint}",
-            on_message=on_message,
-            on_open=on_open,
-            on_close=on_close,
-            on_error=on_error,
-        )
+        try:
+            relay_endpoint = encrypt_internal_message("relay")
+            # Add timestamp to prevent token reuse
+            relay_endpoint = f"{relay_endpoint}_{int(time.time())}"
+            
+            on_open, on_message, on_error, on_close = self._ws_handlers()
+            ws = WebSocketApp(
+                f"ws://localhost:{settings.port}/nostrclient/api/v1/{relay_endpoint}",
+                on_message=on_message,
+                on_open=on_open,
+                on_close=on_close,
+                on_error=on_error,
+            )
 
-        wst = Thread(target=ws.run_forever)
-        wst.daemon = True
-        wst.start()
+            wst = Thread(target=ws.run_forever)
+            wst.daemon = True
+            wst.start()
 
-        return ws
+            # Wait for connection to be established
+            for _ in range(5):  # Try for 5 seconds
+                if ws.sock and ws.sock.connected:
+                    return ws
+                await asyncio.sleep(1)
+            
+            raise ConnectionError("Failed to establish websocket connection")
+
+        except Exception as ex:
+            logger.error(f"Error connecting to nostrclient websocket: {str(ex)}")
+            raise
 
     async def run_forever(self):
         self.running = True

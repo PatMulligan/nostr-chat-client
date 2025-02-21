@@ -1,8 +1,9 @@
 import json
 from http import HTTPStatus
 from typing import List, Optional
+import time
 
-from fastapi import Depends
+from fastapi import Depends, WebSocket
 from fastapi.exceptions import HTTPException
 from lnbits.core.services import websocket_updater
 from lnbits.decorators import (
@@ -373,3 +374,28 @@ async def restart_nostr_client(wallet: WalletTypeInfo = Depends(require_admin_ke
         await nostr_client.restart()
     except Exception as ex:
         logger.warning(ex)
+
+
+@nostrchat_ext.websocket("/nostrclient/api/v1/{token}")
+async def nostrclient_ws(websocket: WebSocket, token: str):
+    try:
+        # Parse timestamp from token
+        token_parts = token.split("_")
+        if len(token_parts) != 2:
+            raise ValueError("Invalid token format")
+        
+        token, timestamp = token_parts
+        
+        # Check if token is too old (> 30 seconds)
+        if int(time.time()) - int(timestamp) > 30:
+            raise ValueError("Token expired")
+        
+        decrypted = decrypt_internal_message(token)
+        if decrypted != "relay":
+            raise ValueError()
+
+        await websocket.accept()
+        await handle_relay_messages(websocket)
+    except Exception as ex:
+        logger.warning(ex)
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
