@@ -1,6 +1,7 @@
 import asyncio
 import json
 from typing import List, Optional, Tuple
+import uuid
 
 from lnbits.bolt11 import decode
 from lnbits.core.crud import get_wallet

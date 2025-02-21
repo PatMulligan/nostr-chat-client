@@ -64,3 +64,46 @@ async def m001_initial(db):
         """
     )
 
+async def m002_admin_config(db):
+    """
+    Create admin_config table to store admin's public key
+    """
+    await db.execute(
+        """
+        CREATE TABLE nostrchat.admin_config (
+            id TEXT PRIMARY KEY,
+            admin_pubkey TEXT NOT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+        """
+    )
+
+async def m003_admin_config_update(db):
+    """
+    Update admin_config table to make nostracct_id NOT NULL
+    """
+    # First create new table with desired schema
+    await db.execute(
+        """
+        CREATE TABLE nostrchat.admin_config_new (
+            nostracct_id TEXT NOT NULL PRIMARY KEY,
+            admin_pubkey TEXT NOT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+        """
+    )
+
+    # Drop old table
+    await db.execute(
+        """
+        DROP TABLE nostrchat.admin_config;
+        """
+    )
+
+    # Rename new table to original name
+    await db.execute(
+        """
+        ALTER TABLE nostrchat.admin_config_new RENAME TO admin_config;
+        """
+    )
+
