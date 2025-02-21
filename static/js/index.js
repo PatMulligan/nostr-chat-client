@@ -1,5 +1,8 @@
 const nostr = window.NostrTools
 
+
+// TODO: fix or improve activeChatPeer data here, maybe just handle it in direct-messages component
+
 window.app = Vue.createApp({
   el: '#vue',
   mixins: [window.windowMixin],

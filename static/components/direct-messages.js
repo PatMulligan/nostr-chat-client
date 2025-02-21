@@ -185,9 +185,22 @@ window.app.component('direct-messages', {
         console.log("$$$$$$$$$$$$$$$$$$$", data)
         if (data.pubkey) {
           this.adminPubkey = data.pubkey;
+          // For non-super users, ensure they only have the admin as a peer
+          if (this.peers.length === 0) {
+            // Add admin as peer if no peers exist
+            await this.addPublicKey(this.adminPubkey)
+          } else if (this.peers.length === 1 && this.peers[0].public_key !== data.pubkey) {
+            // If one peer exists but it's not the admin, replace it
+            this.peers = []
+            await this.addPublicKey(this.adminPubkey)
+          } else if (this.peers.length > 1) {
+            // If multiple peers exist, clear them and add only admin
+            this.peers = []
+            await this.addPublicKey(this.adminPubkey)
+          }
+
           // Automatically set active chat to admin
-          this.addPublicKey(this.adminPubkey)
-          this.$emit('update:activeChatPeer', this.adminPubkey);
+          this.activePublicKey = this.adminPubkey
         }
       } catch (error) {
         console.error('Failed to fetch admin pubkey:', error);
@@ -195,16 +208,12 @@ window.app.component('direct-messages', {
     }
   },
   created: async function () {
-    console.log(this.peers)
     await this.getPeers()
     this.getPeersDebounced = _.debounce(this.getPeers, 2000, false)
-    console.log('here1')
     if (!this.isSuper) {
-      console.log('here2')
       // Fetch admin pubkey for non-admin users
       this.getAdminPubkey()
     }
-    this.activePublicKey = this.peers[0]?.public_key || ''
   },
   beforeDestroy() {
     // Clean up any timers or subscriptions
