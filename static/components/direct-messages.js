@@ -182,7 +182,6 @@ window.app.component('direct-messages', {
           '/nostrchat/api/v1/admin-pubkey',
           this.inkey
         )
-        console.log("$$$$$$$$$$$$$$$$$$$", data)
         if (data.pubkey) {
           this.adminPubkey = data.pubkey;
           // For non-super users, ensure they only have the admin as a peer
@@ -193,7 +192,7 @@ window.app.component('direct-messages', {
             // If one peer exists but it's not the admin, replace it
             this.peers = []
             await this.addPublicKey(this.adminPubkey)
-          } else if (this.peers.length > 1) {
+          } else if (this.peers.length > 1 && !this.peers.some(peer => peer.public_key === data.pubkey)) {
             // If multiple peers exist, clear them and add only admin
             this.peers = []
             await this.addPublicKey(this.adminPubkey)
