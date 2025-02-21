@@ -206,12 +206,12 @@ window.app.component('direct-messages', {
       }
     }
   },
-  created: async function () {
+  mounted: async function () {
     await this.getPeers()
     this.getPeersDebounced = _.debounce(this.getPeers, 2000, false)
     if (!this.isSuper) {
       // Fetch admin pubkey for non-admin users
-      this.getAdminPubkey()
+      await this.getAdminPubkey()
     }
   },
   beforeDestroy() {
