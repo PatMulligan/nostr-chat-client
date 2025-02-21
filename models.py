@@ -46,9 +46,10 @@ class NostrAcctConfig(NostrAcctProfile):
 
 
 class PartialNostrAcct(BaseModel):
-    private_key: str
     public_key: str
+    private_key: str
     config: NostrAcctConfig = NostrAcctConfig()
+    is_super: Optional[bool] = False
 
 
 class NostrAcct(PartialNostrAcct, Nostrable):

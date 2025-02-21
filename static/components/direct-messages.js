@@ -55,6 +55,7 @@ window.app.component('direct-messages', {
       showRawMessage: false,
       rawMessage: null,
       search: '',
+      adminPubkey: null,
     }
   },
   methods: {
@@ -173,19 +174,36 @@ window.app.component('direct-messages', {
           lastChatBox[0].scrollIntoView()
         }
       }, 100)
+    },
+    getAdminPubkey: async function () {
+      try {
+        const { data } = await LNbits.api.request(
+          'GET',
+          '/nostrchat/api/v1/admin-pubkey',
+          this.inkey
+        )
+        console.log("$$$$$$$$$$$$$$$$$$$", data)
+        if (data.pubkey) {
+          this.adminPubkey = data.pubkey;
+          // Automatically set active chat to admin
+          this.addPublicKey(this.adminPubkey)
+          this.$emit('update:activeChatPeer', this.adminPubkey);
+        }
+      } catch (error) {
+        console.error('Failed to fetch admin pubkey:', error);
+      }
     }
   },
   created: async function () {
     console.log(this.peers)
     await this.getPeers()
     this.getPeersDebounced = _.debounce(this.getPeers, 2000, false)
-    if (!this.isSuper && this.peers.length == 0) {
-      // TODO: automatically connect to super pubkey from db
-      // check public key against super
-      console.log("in here?")
-      this.addPublicKey("08bbdea9491d3d391d8afc2a7b632e23437630ab0bcd21e64b75857caab40f47")
+    console.log('here1')
+    if (!this.isSuper) {
+      console.log('here2')
+      // Fetch admin pubkey for non-admin users
+      this.getAdminPubkey()
     }
-    console.log(this.peers)
     this.activePublicKey = this.peers[0]?.public_key || ''
   },
   beforeDestroy() {
