@@ -60,12 +60,29 @@ async def send_dm(
     other_pubkey: str,
     type_: int,
     dm_content: str,
+    event_id: Optional[str] = None,
+    event_created_at: Optional[int] = None,
 ):
-    dm_event = nostracct.build_dm_event(dm_content, other_pubkey)
+    # If event_id and created_at not provided, create new event
+    if not event_id or not event_created_at:
+        dm_event = nostracct.build_dm_event(dm_content, other_pubkey)
+        event_id = dm_event.id
+        event_created_at = dm_event.created_at
+    else:
+        # Use provided values for local message
+        dm_event = NostrEvent(
+            id=event_id,
+            pubkey=nostracct.public_key,
+            created_at=event_created_at,
+            kind=4,
+            tags=[["p", other_pubkey]],
+            content=nostracct.encrypt_message(dm_content, other_pubkey)
+        )
+        dm_event.sig = nostracct.sign_hash(bytes.fromhex(dm_event.id))
 
     dm = PartialDirectMessage(
-        event_id=dm_event.id,
-        event_created_at=dm_event.created_at,
+        event_id=event_id,
+        event_created_at=event_created_at,
         message=dm_content,
         public_key=other_pubkey,
         type=type_,
@@ -103,28 +120,61 @@ async def process_nostr_message(msg: str):
         logger.debug(ex)
 
 async def _handle_nip04_message(event: NostrEvent):
-    nostracct_public_key = event.pubkey
-    nostracct = await get_nostracct_by_pubkey(nostracct_public_key)
+    p_tags = event.tag_values("p")
+    if not p_tags:
+        logger.warning(f"NIP04 event has no 'p' tag: '{event.id}'")
+        return
 
-    if not nostracct:
-        p_tags = event.tag_values("p")
-        if len(p_tags) and p_tags[0]:
-            nostracct_public_key = p_tags[0]
-            nostracct = await get_nostracct_by_pubkey(nostracct_public_key)
+    sender = await get_nostracct_by_pubkey(event.pubkey)
+    recipient = await get_nostracct_by_pubkey(p_tags[0])
 
-    assert nostracct, f"Nostr Account not found for public key '{nostracct_public_key}'"
+    if not sender and not recipient:
+        logger.debug(f"Neither sender nor recipient are in our database for event: {event.id}")
+        return
 
-    if event.pubkey == nostracct_public_key:
-        assert len(event.tag_values("p")) != 0, "Outgong message has no 'p' tag"
-        clear_text_msg = nostracct.decrypt_message(
-            event.content, event.tag_values("p")[0]
-        )
-        await _handle_outgoing_dms(event, nostracct, clear_text_msg)
-    elif event.has_tag_value("p", nostracct_public_key):
-        clear_text_msg = nostracct.decrypt_message(event.content, event.pubkey)
-        await _handle_incoming_dms(event, nostracct, clear_text_msg)
-    else:
-        logger.warning(f"Bad NIP04 event: '{event.id}'")
+    try:
+        if sender:
+            clear_text_msg = sender.decrypt_message(event.content, p_tags[0])
+            dm = await _handle_outgoing_dms(event, sender, clear_text_msg)
+            
+            if recipient:
+                # Create a copy of the message for the recipient with incoming=True
+                incoming_dm = PartialDirectMessage(
+                    event_id=f"{event.id}_incoming",  # Make unique event_id for recipient's copy
+                    event_created_at=event.created_at,
+                    message=clear_text_msg,
+                    public_key=event.pubkey,  # Set to sender's pubkey for recipient
+                    type=dm.type,
+                    incoming=True  # Mark as incoming for recipient
+                )
+                try:
+                    recipient_dm = await create_direct_message(recipient.id, incoming_dm)
+                    
+                    # Update unread count and handle peer creation
+                    peer = await get_peer(recipient.id, event.pubkey)
+                    if not peer:
+                        await _handle_new_peer(event, recipient)
+                    await increment_peer_unread_messages(recipient.id, event.pubkey)
+                    
+                    # Notify recipient with the incoming message
+                    await websocket_updater(
+                        recipient.id,
+                        json.dumps({
+                            "type": f"dm:{dm.type}",
+                            "peerPubkey": event.pubkey,
+                            "dm": recipient_dm.dict(),
+                        })
+                    )
+                except Exception as ex:
+                    logger.warning(f"Error creating recipient copy of message: {str(ex)}")
+                
+        # Handle as incoming message only if we have recipient but not sender
+        elif recipient:
+            clear_text_msg = recipient.decrypt_message(event.content, event.pubkey)
+            await _handle_incoming_dms(event, recipient, clear_text_msg)
+
+    except Exception as ex:
+        logger.warning(f"Error processing NIP04 message {event.id}: {str(ex)}")
 
 
 async def _handle_incoming_dms(
@@ -159,7 +209,7 @@ async def _handle_incoming_dms(
 
 async def _handle_outgoing_dms(
     event: NostrEvent, nostracct: NostrAcct, clear_text_msg: str
-):
+) -> DirectMessage:
     sent_to = event.tag_values("p")
     type_, _ = PartialDirectMessage.parse_message(clear_text_msg)
     if len(sent_to) != 0:
@@ -170,7 +220,8 @@ async def _handle_outgoing_dms(
             public_key=sent_to[0],
             type=type_.value,
         )
-        await create_direct_message(nostracct.id, dm)
+        return await create_direct_message(nostracct.id, dm)
+    raise ValueError("No recipient in p tags")
 
 
 # TODO: comment out for now

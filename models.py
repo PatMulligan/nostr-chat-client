@@ -131,13 +131,12 @@ class DirectMessageType(Enum):
 
 
 class PartialDirectMessage(BaseModel):
-    event_id: Optional[str] = None
-    event_created_at: Optional[int] = None
+    event_id: str
+    event_created_at: int
     message: str
     public_key: str
     type: int = DirectMessageType.PLAIN_TEXT.value
-    incoming: bool = False
-    time: Optional[int] = None
+    incoming: bool = False  # Default to outgoing if not specified
 
     @classmethod
     def parse_message(cls, msg) -> Tuple[DirectMessageType, Optional[Any]]:

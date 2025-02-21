@@ -58,7 +58,7 @@ window.app.component('direct-messages', {
     }
   },
   methods: {
-    sendMessage: async function () {},
+    sendMessage: async function () { },
     buildPeerLabel: function (c) {
       let label = `${c.profile.name || 'unknown'} ${c.profile.about || ''}`
       if (c.unread_messages) {
@@ -75,7 +75,7 @@ window.app.component('direct-messages', {
         return
       }
       try {
-        const {data} = await LNbits.api.request(
+        const { data } = await LNbits.api.request(
           'GET',
           '/nostrchat/api/v1/message/' + pubkey,
           this.inkey
@@ -89,7 +89,7 @@ window.app.component('direct-messages', {
     },
     getPeers: async function () {
       try {
-        const {data} = await LNbits.api.request(
+        const { data } = await LNbits.api.request(
           'GET',
           '/nostrchat/api/v1/peer',
           this.inkey
@@ -103,13 +103,15 @@ window.app.component('direct-messages', {
 
     sendDirectMesage: async function () {
       try {
-        const {data} = await LNbits.api.request(
+        const { data } = await LNbits.api.request(
           'POST',
           '/nostrchat/api/v1/message',
           this.adminkey,
           {
             message: this.newMessage,
-            public_key: this.activePublicKey
+            public_key: this.activePublicKey,
+            event_id: crypto.randomUUID(),
+            event_created_at: Math.floor(Date.now() / 1000)
           }
         )
         this.messages = this.messages.concat([data])
@@ -121,7 +123,7 @@ window.app.component('direct-messages', {
     },
     addPublicKey: async function (pubkey = null) {
       try {
-        const {data} = await LNbits.api.request(
+        const { data } = await LNbits.api.request(
           'POST',
           '/nostrchat/api/v1/peer',
           this.adminkey,
@@ -149,7 +151,7 @@ window.app.component('direct-messages', {
       this.getPeersDebounced()
     },
     showOrderDetails: function (orderId, eventId) {
-      this.$emit('order-selected', {orderId, eventId})
+      this.$emit('order-selected', { orderId, eventId })
     },
     showClientOrders: function () {
       this.$emit('peer-selected', this.activePublicKey)
@@ -174,11 +176,16 @@ window.app.component('direct-messages', {
     }
   },
   created: async function () {
+    console.log(this.peers)
     await this.getPeers()
     this.getPeersDebounced = _.debounce(this.getPeers, 2000, false)
     if (!this.isSuper && this.peers.length == 0) {
       // TODO: automatically connect to super pubkey from db
+      // check public key against super
+      console.log("in here?")
+      this.addPublicKey("08bbdea9491d3d391d8afc2a7b632e23437630ab0bcd21e64b75857caab40f47")
     }
+    console.log(this.peers)
     this.activePublicKey = this.peers[0]?.public_key || ''
   }
 })
