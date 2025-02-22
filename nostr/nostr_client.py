@@ -4,6 +4,7 @@ from asyncio import Queue
 from threading import Thread
 from typing import List, Optional
 import time
+from urllib.parse import quote_plus
 
 from loguru import logger
 from websocket import WebSocketApp
@@ -33,6 +34,8 @@ class NostrClient:
 
         try:
             relay_endpoint = encrypt_internal_message("relay")
+            # URL encode the encrypted token including forward slashes
+            relay_endpoint = quote_plus(relay_endpoint)
             # Add timestamp to prevent token reuse
             relay_endpoint = f"{relay_endpoint}_{int(time.time())}"
             
