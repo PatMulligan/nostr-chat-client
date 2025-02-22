@@ -51,7 +51,7 @@ class NostrClient:
                 if ws.sock and ws.sock.connected:
                     return ws
                 await asyncio.sleep(1)
-            
+
             raise ConnectionError("Failed to establish websocket connection")
 
         except Exception as ex:

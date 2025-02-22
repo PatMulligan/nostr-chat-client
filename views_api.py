@@ -2,6 +2,7 @@ import json
 from http import HTTPStatus
 from typing import List, Optional
 import time
+import base64
 
 from fastapi import Depends, WebSocket
 from fastapi.exceptions import HTTPException
