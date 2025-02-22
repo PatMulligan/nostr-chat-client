@@ -3,8 +3,6 @@ import json
 from asyncio import Queue
 from threading import Thread
 from typing import List, Optional
-import time
-from urllib.parse import quote_plus
 
 from loguru import logger
 from websocket import WebSocketApp
@@ -33,12 +31,8 @@ class NostrClient:
         logger.debug(f"Connecting to websockets for 'nostrclient' extension...")
 
         try:
-            relay_endpoint = encrypt_internal_message("relay")
-            # URL encode the encrypted token including forward slashes
-            relay_endpoint = quote_plus(relay_endpoint)
-            # Add timestamp to prevent token reuse
-            relay_endpoint = f"{relay_endpoint}_{int(time.time())}"
-            
+            relay_endpoint = encrypt_internal_message("relay", urlsafe=True)
+
             on_open, on_message, on_error, on_close = self._ws_handlers()
             ws = WebSocketApp(
                 f"ws://localhost:{settings.port}/nostrclient/api/v1/{relay_endpoint}",
