@@ -138,7 +138,7 @@
                 type="submit"
                 icon="send"
                 color="primary"
-                :disable="!newMessage.trim()"
+                :disable="!newMessage.trim() || !activePublicKey"
               />
               </q-input>
             </q-form>
