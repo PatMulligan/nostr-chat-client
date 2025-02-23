@@ -81,7 +81,8 @@
     <q-card>
       <q-card-section>
         <div class="row items-center">
-          <div v-if="isMobile" class="col-auto q-pr-sm">
+          <!-- Back button - only visible for super users on mobile -->
+          <div v-if="isSuper && isMobile" class="col-auto q-pr-sm">
             <q-btn flat round dense icon="arrow_back" @click="clearActivePeer" />
           </div>
           <div class="col row items-center">
