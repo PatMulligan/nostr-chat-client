@@ -117,6 +117,7 @@ window.app.component('direct-messages', {
         this.messages = this.messages.concat([data])
         this.newMessage = ''
         this.focusOnChatBox(this.messages.length - 1)
+        this.$refs.newMessage.focus()
       } catch (error) {
         LNbits.utils.notifyApiError(error)
       }
