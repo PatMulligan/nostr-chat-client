@@ -101,10 +101,10 @@
       <q-card-section class="q-pa-none">
         <q-separator></q-separator>
       </q-card-section>
-      <q-card-section>
+      <q-card-section class="chat-section">
         <div class="chat-container" ref="chatCard">
           <div class="chat-box" ref="chatBox">
-            <div class="chat-messages" style="height: 45vh">
+            <div class="chat-messages">
               <template v-if="messages.length">
                 <q-chat-message
                   v-for="(dm, index) in messagesAsJson"
@@ -128,7 +128,7 @@
               </div>
             </div>
           </div>
-          <q-card-section class="chat-input q-pa-sm">
+          <div class="chat-input-wrapper">
             <q-form @submit="sendDirectMessage" class="full-width">
               <q-input
                 ref="newMessage"
@@ -149,7 +149,7 @@
                 />
               </q-input>
             </q-form>
-          </q-card-section>
+          </div>
         </div>
       </q-card-section>
     </q-card>
@@ -202,32 +202,53 @@
 </div>
 
 <style>
+.chat-section {
+  padding: 0 !important;
+  height: 100%;
+}
+
 .chat-container {
-  height: calc(100vh - 150px);
   display: flex;
   flex-direction: column;
+  height: calc(100vh - 120px);
   background: #f5f5f5;
 }
 
 .chat-box {
   flex: 1;
   overflow-y: auto;
-  scroll-behavior: smooth;
-  position: relative;
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
 }
 
 .chat-messages {
   padding: 1rem;
-  min-height: 100%;
-  display: flex;
-  flex-direction: column;
 }
 
-.chat-input {
-  background: white;
-  border-top: 1px solid rgba(0, 0, 0, 0.12);
+.chat-input-wrapper {
   position: sticky;
   bottom: 0;
+  background: white;
+  padding: 8px;
+  border-top: 1px solid rgba(0, 0, 0, 0.12);
+  z-index: 1000;
+}
+
+/* Mobile specific styles */
+@media (max-width: 599px) {
+  .chat-container {
+    height: calc(var(--vh, 1vh) * 100 - 100px);
+  }
+
+  .chat-input-wrapper {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+  }
+
+  .chat-box {
+    padding-bottom: 60px; /* Space for input */
+  }
 }
 
 /* Improve message bubbles */
@@ -255,14 +276,4 @@
   background: rgba(0,0,0,0.2);
   border-radius: 3px;
 }
-  .chat-messages {
-    padding: 0.5rem; /* Smaller padding on mobile */
-    height: auto !important; /* Override fixed height */
-  }
-
-  /* Add padding to prevent last message from being hidden behind input */
-  .chat-box {
-    padding-bottom: 60px;
-  }
-
 </style>

@@ -242,15 +242,29 @@ window.app.component('direct-messages', {
     this.chatBox = this.$refs.chatBox
     await this.getPeers()
     this.getPeersDebounced = _.debounce(this.getPeers, 2000, false)
+    
+    // Handle mobile viewport height
+    const setVH = () => {
+      const vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty('--vh', `${vh}px`);
+    };
+    
+    // Set initial value
+    setVH();
+    
+    // Update on resize and orientation change
+    window.addEventListener('resize', setVH);
+    window.addEventListener('orientationchange', setVH);
+    
     if (!this.isSuper) {
-      // Fetch admin pubkey for non-admin users
       await this.getAdminPubkey()
     }
   },
   beforeDestroy() {
-    // Clean up any timers or subscriptions
     if (this.getPeersDebounced) {
       this.getPeersDebounced.cancel();
     }
+    window.removeEventListener('resize', setVH);
+    window.removeEventListener('orientationchange', setVH);
   }
 })
