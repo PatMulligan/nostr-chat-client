@@ -4,6 +4,12 @@ window.app.component('direct-messages', {
   template: '#direct-messages',
   delimiters: ['${', '}'],
   watch: {
+    messages: {
+      handler() {
+        this.scrollToBottom()
+      },
+      deep: true
+    },
     activeChatPeer: async function (n) {
       this.activePublicKey = n
     },
@@ -69,9 +75,18 @@ window.app.component('direct-messages', {
       rawMessage: null,
       search: '',
       adminPubkey: null,
+      chatBox: null
     }
   },
   methods: {
+    scrollToBottom() {
+      this.$nextTick(() => {
+        const chatBoxElement = this.$refs.chatBox
+        if (chatBoxElement) {
+          chatBoxElement.scrollTop = chatBoxElement.scrollHeight
+        }
+      })
+    },
     buildPeerLabel: function (c) {
       let label = `${c.profile.name || 'unknown'} ${c.profile.about || ''}`
       if (c.unread_messages) {
@@ -94,8 +109,8 @@ window.app.component('direct-messages', {
           this.inkey
         )
         this.messages = data
-
-        this.focusOnChatBox(this.messages.length - 1)
+        this.scrollToBottom()
+        this.$refs.newMessage?.focus()
       } catch (error) {
         LNbits.utils.notifyApiError(error)
       }
@@ -129,7 +144,7 @@ window.app.component('direct-messages', {
         )
         this.messages = this.messages.concat([data])
         this.newMessage = ''
-        this.focusOnChatBox(this.messages.length - 1)
+        this.scrollToBottom()
         this.$refs.newMessage.focus()
       } catch (error) {
         LNbits.utils.notifyApiError(error)
@@ -159,8 +174,7 @@ window.app.component('direct-messages', {
     handleNewMessage: async function (data) {
       if (data.peerPubkey === this.activePublicKey) {
         this.messages.push(data.dm)
-        this.focusOnChatBox(this.messages.length - 1)
-        // focus back on input box
+        this.scrollToBottom()
       }
       this.getPeersDebounced()
     },
@@ -188,6 +202,7 @@ window.app.component('direct-messages', {
         }
       }, 100)
     },
+
     getAdminPubkey: async function () {
       try {
         const { data } = await LNbits.api.request(
@@ -224,6 +239,7 @@ window.app.component('direct-messages', {
     }
   },
   mounted: async function () {
+    this.chatBox = this.$refs.chatBox
     await this.getPeers()
     this.getPeersDebounced = _.debounce(this.getPeers, 2000, false)
     if (!this.isSuper) {
