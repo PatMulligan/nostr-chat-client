@@ -119,7 +119,9 @@
                 </q-chat-message>
               </template>
               <div v-else class="text-center text-grey q-pa-md">
-                <q-icon name="chat" size="3em" />
+                <div class="icon-wrapper">
+                  <q-icon name="chat" size="1em" />
+                </div>
                 <div class="q-mt-sm">
                   ${activePublicKey ? 'No messages yet' : 'Select a peer to start chatting'}
                 </div>
@@ -211,10 +213,14 @@
   flex: 1;
   overflow-y: auto;
   scroll-behavior: smooth;
+  position: relative;
 }
 
 .chat-messages {
   padding: 1rem;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .chat-input {
@@ -249,4 +255,14 @@
   background: rgba(0,0,0,0.2);
   border-radius: 3px;
 }
+  .chat-messages {
+    padding: 0.5rem; /* Smaller padding on mobile */
+    height: auto !important; /* Override fixed height */
+  }
+
+  /* Add padding to prevent last message from being hidden behind input */
+  .chat-box {
+    padding-bottom: 60px;
+  }
+
 </style>
