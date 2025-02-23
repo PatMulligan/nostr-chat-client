@@ -41,6 +41,15 @@ window.app.component('direct-messages', {
         const pubkey = peer.public_key.toLowerCase()
         return name.includes(searchLower) || pubkey.includes(searchLower)
       })
+    },
+    isMobile() {
+      return this.$q.screen.lt.sm
+    },
+    showPeerList() {
+      return !this.isMobile || (this.isMobile && !this.activePublicKey)
+    },
+    showChatArea() {
+      return !this.isMobile || (this.isMobile && this.activePublicKey)
     }
   },
   data: function () {
@@ -204,6 +213,10 @@ window.app.component('direct-messages', {
       } catch (error) {
         console.error('Failed to fetch admin pubkey:', error);
       }
+    },
+    clearActivePeer() {
+      this.activePublicKey = null
+      this.messages = []
     }
   },
   mounted: async function () {
