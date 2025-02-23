@@ -59,7 +59,6 @@ window.app.component('direct-messages', {
     }
   },
   methods: {
-    sendMessage: async function () { },
     buildPeerLabel: function (c) {
       let label = `${c.profile.name || 'unknown'} ${c.profile.about || ''}`
       if (c.unread_messages) {
@@ -102,7 +101,7 @@ window.app.component('direct-messages', {
       }
     },
 
-    sendDirectMesage: async function () {
+    sendDirectMessage: async function () {
       try {
         const { data } = await LNbits.api.request(
           'POST',

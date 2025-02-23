@@ -122,7 +122,7 @@
             </div>
           </div>
           <q-card-section>
-            <q-form @submit="sendDirectMesage" class="full-width chat-input">
+            <q-form @submit="sendDirectMessage" class="full-width chat-input">
               <q-input
                 ref="newMessage"
                 v-model="newMessage"
@@ -131,16 +131,15 @@
                 dense
                 outlined
               >
-                <template>
-                  <q-btn
-                    round
-                    dense
-                    flat
-                    type="submit"
-                    icon="send"
-                    color="primary"
-                  />
-                </template>
+              <q-btn
+                round
+                dense
+                flat
+                type="submit"
+                icon="send"
+                color="primary"
+                :disable="!newMessage.trim()"
+              />
               </q-input>
             </q-form>
           </q-card-section>
