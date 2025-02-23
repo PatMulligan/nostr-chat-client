@@ -33,29 +33,44 @@
 
     <!-- Peer List -->
     <q-list padding separator>
-      <q-item
-        v-for="peer in filteredPeers"
-        :key="peer.public_key"
-        clickable
-        v-ripple
-        :active="activePublicKey === peer.public_key"
-        active-class="bg-primary text-white"
-        @click="activePublicKey = peer.public_key; selectActivePeer()"
-      >
-        <q-item-section avatar>
-          <q-avatar>
-            <q-icon name="person" />
-          </q-avatar>
-        </q-item-section>
+      <template v-if="peers.length">
+        <q-item
+          v-for="peer in filteredPeers"
+          :key="peer.public_key"
+          clickable
+          v-ripple
+          :active="activePublicKey === peer.public_key"
+          active-class="bg-primary text-white"
+          @click="activePublicKey = peer.public_key; selectActivePeer()"
+        >
+          <q-item-section avatar>
+            <q-avatar>
+              <q-icon name="person" />
+            </q-avatar>
+          </q-item-section>
 
-        <q-item-section>
-          <q-item-label v-text="peer.profile.name || 'Unknown'"></q-item-label>
-          <q-item-label caption lines="1" v-text="peer.public_key.slice(0, 8) + '...' + peer.public_key.slice(-8)">
-          </q-item-label>
-        </q-item-section>
+          <q-item-section>
+            <q-item-label v-text="peer.profile.name || 'Unknown'"></q-item-label>
+            <q-item-label caption lines="1" v-text="peer.public_key.slice(0, 8) + '...' + peer.public_key.slice(-8)">
+            </q-item-label>
+          </q-item-section>
 
-        <q-item-section side v-if="peer.unread_messages">
-          <q-badge color="primary" floating v-text="peer.unread_messages"></q-badge>
+          <q-item-section side v-if="peer.unread_messages">
+            <q-badge color="primary" floating v-text="peer.unread_messages"></q-badge>
+          </q-item-section>
+        </q-item>
+      </template>
+      <q-item v-else>
+        <q-item-section class="text-center text-grey">
+          <q-icon name="people" size="3em" />
+          <div class="q-mt-sm">No peers yet</div>
+          <q-btn
+            flat
+            color="primary"
+            label="Add a peer"
+            @click="showAddPublicKey = true"
+            class="q-mt-sm"
+          />
         </q-item-section>
       </q-item>
     </q-list>
@@ -66,18 +81,20 @@
     <q-card>
       <q-card-section>
         <div class="row items-center">
-          <!-- Back button on mobile -->
           <div v-if="isMobile" class="col-auto q-pr-sm">
-            <q-btn
-              flat
-              round
-              dense
-              icon="arrow_back"
-              @click="clearActivePeer"
-            />
+            <q-btn flat round dense icon="arrow_back" @click="clearActivePeer" />
           </div>
-          <div class="col">
-            <h6 class="text-subtitle1 q-my-none">Messages</h6>
+          <div class="col row items-center">
+            <template v-if="activePeer">
+              <q-avatar size="32px" class="q-mr-sm">
+                <q-icon name="person" />
+              </q-avatar>
+              <div>
+                <div class="text-subtitle1 q-mb-none">${activePeer.profile.name || 'Unknown'}</div>
+                <div class="text-caption text-grey">${activePeer.public_key.slice(0, 8)}...${activePeer.public_key.slice(-8)}</div>
+              </div>
+            </template>
+            <h6 v-else class="text-subtitle1 q-my-none">Messages</h6>
           </div>
         </div>
       </q-card-section>
@@ -88,70 +105,46 @@
         <div class="chat-container" ref="chatCard">
           <div class="chat-box">
             <div class="chat-messages" style="height: 45vh">
-              <q-chat-message
-                v-for="(dm, index) in messagesAsJson"
-                :key="index"
-                :name="dm.incoming ? 'peer': 'me'"
-                :sent="!dm.incoming"
-                :stamp="dm.dateFrom"
-                :bg-color="dm.incoming ? 'white' : 'light-green-2'"
-                :class="'chat-mesage-index-'+index"
-              >
-                <!-- Leaving future reference to implement enums -->
-
-                <!-- <div v-if="dm.isJson"> -->
-                <!--   <div v-if="dm.message.type === 0"> -->
-                <!--     <strong>New order:</strong> -->
-                <!--   </div> -->
-                <!--   <div v-else-if="dm.message.type === 1"> -->
-                <!--     <strong>Reply sent for order: </strong> -->
-                <!--   </div> -->
-                <!--   <div v-else-if="dm.message.type === 2"> -->
-                <!--     <q-badge v-if="dm.message.paid" color="green">Paid </q-badge> -->
-                <!--     <q-badge v-if="dm.message.shipped" color="green" -->
-                <!--       >Shipped -->
-                <!--     </q-badge> -->
-                <!--   </div> -->
-                <!--   <div> -->
-                <!--     <span v-text="dm.message.message"></span> -->
-                <!--     <q-badge color="orange"> -->
-                <!--       <span -->
-                <!--         v-text="dm.message.id" -->
-                <!--         @click="showOrderDetails(dm.message.id, dm.event_id)" -->
-                <!--         class="cursor-pointer" -->
-                <!--       ></span> -->
-                <!--     </q-badge> -->
-                <!--   </div> -->
-                <!--   <q-badge -->
-                <!--     @click="showMessageRawData(index)" -->
-                <!--     class="cursor-pointer" -->
-                <!--     >...</q-badge -->
-                <!--   > -->
-                <!-- </div> -->
-                <!-- <div v-else><span v-text="dm.message"></span></div> -->
-                <div><span v-text="dm.message"></span></div>
-              </q-chat-message>
+              <template v-if="messages.length">
+                <q-chat-message
+                  v-for="(dm, index) in messagesAsJson"
+                  :key="index"
+                  :name="dm.incoming ? 'peer': 'me'"
+                  :sent="!dm.incoming"
+                  :stamp="dm.dateFrom"
+                  :bg-color="dm.incoming ? 'white' : 'light-green-2'"
+                  :class="'chat-mesage-index-'+index"
+                >
+                  <div><span v-text="dm.message"></span></div>
+                </q-chat-message>
+              </template>
+              <div v-else class="text-center text-grey q-pa-md">
+                <q-icon name="chat" size="3em" />
+                <div class="q-mt-sm">
+                  ${activePublicKey ? 'No messages yet' : 'Select a peer to start chatting'}
+                </div>
+              </div>
             </div>
           </div>
-          <q-card-section>
-            <q-form @submit="sendDirectMessage" class="full-width chat-input">
+          <q-card-section class="chat-input q-pa-sm">
+            <q-form @submit="sendDirectMessage" class="full-width">
               <q-input
                 ref="newMessage"
                 v-model="newMessage"
-                placeholder="Message"
+                placeholder="Type a message..."
                 class="full-width"
                 dense
                 outlined
               >
-              <q-btn
-                round
-                dense
-                flat
-                type="submit"
-                icon="send"
-                color="primary"
-                :disable="!newMessage.trim() || !activePublicKey"
-              />
+                <q-btn
+                  round
+                  dense
+                  flat
+                  type="submit"
+                  icon="send"
+                  color="primary"
+                  :disable="!newMessage.trim() || !activePublicKey"
+                />
               </q-input>
             </q-form>
           </q-card-section>
@@ -211,11 +204,13 @@
   height: calc(100vh - 150px);
   display: flex;
   flex-direction: column;
+  background: #f5f5f5;
 }
 
 .chat-box {
   flex: 1;
   overflow-y: auto;
+  scroll-behavior: smooth;
 }
 
 .chat-messages {
@@ -223,7 +218,35 @@
 }
 
 .chat-input {
-  padding: 1rem;
-  border-top: 1px solid #ddd;
+  background: white;
+  border-top: 1px solid rgba(0, 0, 0, 0.12);
+  position: sticky;
+  bottom: 0;
+}
+
+/* Improve message bubbles */
+.q-message-text {
+  border-radius: 12px !important;
+  padding: 8px 12px !important;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1) !important;
+}
+
+/* Add hover effect to peer list items */
+.q-item {
+  transition: background-color 0.2s;
+}
+
+.q-item:hover {
+  background-color: rgba(0,0,0,0.03);
+}
+
+/* Improve scrollbar appearance */
+.chat-box::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-box::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.2);
+  border-radius: 3px;
 }
 </style>

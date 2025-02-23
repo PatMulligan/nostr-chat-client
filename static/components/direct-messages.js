@@ -50,6 +50,10 @@ window.app.component('direct-messages', {
     },
     showChatArea() {
       return !this.isMobile || (this.isMobile && this.activePublicKey)
+    },
+    activePeer() {
+      if (!this.activePublicKey) return null
+      return this.peers.find(p => p.public_key === this.activePublicKey)
     }
   },
   data: function () {
